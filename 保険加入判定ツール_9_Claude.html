@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>社会保険・雇用保険 加入判定ツール</title>
+<style>
+:root {
+  --navy:    #1A3A5C;
+  --navy2:   #1F4E79;
+  --navy3:   #2E6DA4;
+  --accent:  #2E86C1;
+  --sky:     #EBF4FB;
+  --sky2:    #D6EAF8;
+  --req:     #C0392B;
+  --req-bg:  #FDEDEC;
+  --ok:      #1E8449;
+  --ok-bg:   #EAFAF1;
+  --warn:    #B7770D;
+  --warn-bg: #FEF9E7;
+  --dual:    #6C3483;
+  --dual-bg: #F5EEF8;
+  --gray:    #F0F4F8;
+  --border:  #C8DCF0;
+  --text:    #1a1a2e;
+  --sub:     #4a5568;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Hiragino Sans", "ヒラギノ角ゴ ProN", "メイリオ", Meiryo, sans-serif;
+  background: var(--gray);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* ── ヘッダー ── */
+header {
+  background: linear-gradient(135deg, #0f2d4a 0%, var(--navy2) 60%, var(--navy3) 100%);
+  color: #fff;
+  padding: 28px 32px 24px;
+  border-bottom: 3px solid var(--accent);
+  position: relative;
+  overflow: hidden;
+}
+header::before {
+  content: '';
+  position: absolute; top: -40px; right: -40px;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: rgba(46,134,193,0.12);
+}
+header::after {
+  content: '';
+  position: absolute; bottom: -20px; left: 30%;
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.04);
+}
+header h1 { font-size: 1.25rem; font-weight: bold; letter-spacing: 0.02em; position: relative; }
+header p  { font-size: 0.82rem; margin-top: 6px; opacity: 0.8; position: relative; }
+.header-badge {
+  display: inline-block;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 4px;
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  margin-bottom: 10px;
+  letter-spacing: 0.05em;
+}
+
+/* ── コンテナ ── */
+.container { max-width: 860px; margin: 28px auto; padding: 0 16px 64px; }
+
+/* ── セクション ── */
+.section {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  margin-bottom: 20px;
+  overflow: hidden;
+  border: 1px solid #E2EEF8;
+  animation: fadeUp 0.3s ease both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.section:nth-child(2) { animation-delay: 0.05s; }
+.section:nth-child(3) { animation-delay: 0.10s; }
+.section:nth-child(4) { animation-delay: 0.15s; }
+
+.section-header {
+  background: var(--navy2);
+  color: #fff;
+  padding: 13px 20px;
+  font-size: 0.92rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.02em;
+}
+.section-header .step-badge {
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+.section-body { padding: 22px; }
+
+/* ── フォーム要素 ── */
+.field { margin-bottom: 20px; }
+.field:last-child { margin-bottom: 0; }
+
+.field-label {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: bold;
+  margin-bottom: 6px;
+  color: var(--navy2);
+}
+.field-note {
+  font-size: 0.76rem;
+  color: var(--sub);
+  font-weight: normal;
+  margin-left: 6px;
+}
+.field-hint {
+  font-size: 0.78rem;
+  color: var(--sub);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+input[type="number"] {
+  width: 100%;
+  max-width: 300px;
+  padding: 10px 14px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.92rem;
+  font-family: inherit;
+  background: var(--sky);
+  transition: border-color 0.15s, background 0.15s;
+}
+input[type="number"]:focus {
+  outline: none;
+  border-color: var(--navy2);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(31,78,121,0.1);
+}
+
+.radio-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: normal;
+  color: #333;
+  cursor: pointer;
+  background: var(--gray);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 0.87rem;
+  transition: all 0.15s;
+  user-select: none;
+}
+.radio-group label:hover {
+  border-color: var(--accent);
+  background: var(--sky);
+}
+.radio-group label:has(input:checked) {
+  background: var(--navy2);
+  color: #fff;
+  border-color: var(--navy2);
+  box-shadow: 0 2px 6px rgba(31,78,121,0.25);
+}
+.radio-group input[type="radio"] {
+  accent-color: var(--navy2);
+  width: 15px; height: 15px;
+}
+
+/* ── サブフィールド ── */
+.sub-field {
+  background: var(--sky);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  padding: 16px 18px;
+  margin-top: 12px;
+  animation: slideDown 0.2s ease;
+}
+.sub-field.warn {
+  background: #FFFBF0;
+  border-left-color: #E67E22;
+}
+.sub-field.exception {
+  background: #F0F7FF;
+  border-left-color: #2980B9;
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.sub-label {
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: var(--navy2);
+  margin-bottom: 4px;
+}
+.sub-label.warn { color: #8B5E00; }
+.sub-note {
+  font-size: 0.76rem;
+  color: #7D6608;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+.sub-note.blue { color: #1A5276; }
+
+/* ── ボタン ── */
+.btn-area { text-align: center; margin: 8px 0; }
+.btn-judge {
+  display: inline-block;
+  width: 100%;
+  max-width: 340px;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, var(--navy2), var(--navy3));
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 1.05rem;
+  font-weight: bold;
+  font-family: inherit;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  box-shadow: 0 4px 14px rgba(31,78,121,0.35);
+  transition: all 0.2s;
+}
+.btn-judge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(31,78,121,0.45);
+}
+.btn-judge:active { transform: translateY(0); }
+.btn-reset {
+  display: inline-block;
+  width: 100%;
+  max-width: 340px;
+  margin-top: 10px;
+  padding: 11px 24px;
+  background: #fff;
+  color: var(--navy2);
+  border: 2px solid var(--navy2);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-reset:hover { background: var(--sky); }
+
+/* ── 結果エリア ── */
+#result { margin-top: 28px; }
+.result-section-header {
+  background: var(--navy);
+  color: #fff;
+  padding: 14px 22px;
+  border-radius: 12px 12px 0 0;
+  font-size: 1rem;
+  font-weight: bold;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.result-inner {
+  background: #fff;
+  border: 2px solid var(--navy);
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  padding: 22px;
+  margin-bottom: 28px;
+}
+
+.result-card {
+  border-radius: 10px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.09);
+}
+.result-header {
+  padding: 13px 18px;
+  font-weight: bold;
+  font-size: 0.97rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.result-body {
+  padding: 16px 18px;
+  font-size: 0.88rem;
+  line-height: 1.8;
+  background: #fff;
+}
+
+/* カード色 */
+.card-req  .result-header { background: var(--req);  color: #fff; }
+.card-req  .result-body   { border: 2px solid var(--req); border-top: none; border-radius: 0 0 10px 10px; background: var(--req-bg); }
+.card-ok   .result-header { background: var(--ok);   color: #fff; }
+.card-ok   .result-body   { border: 2px solid var(--ok); border-top: none; border-radius: 0 0 10px 10px; background: var(--ok-bg); }
+.card-warn .result-header { background: var(--warn); color: #fff; }
+.card-warn .result-body   { border: 2px solid var(--warn); border-top: none; border-radius: 0 0 10px 10px; background: var(--warn-bg); }
+.card-dual .result-header { background: var(--dual); color: #fff; }
+.card-dual .result-body   { border: 2px solid var(--dual); border-top: none; border-radius: 0 0 10px 10px; background: var(--dual-bg); }
+
+/* 理由リスト */
+.reason-list { margin: 6px 0 0 18px; }
+.reason-list li { margin-bottom: 5px; }
+
+/* 根拠ピル */
+.basis-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255,255,255,0.6);
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 20px;
+  font-size: 0.74rem;
+  padding: 2px 10px;
+  margin: 8px 4px 0 0;
+  color: #333;
+}
+
+.note-box {
+  margin-top: 12px;
+  color: #7D5800;
+  font-size: 0.83rem;
+  background: #FFFBEA;
+  border-left: 3px solid #D4AC0D;
+  padding: 8px 12px;
+  border-radius: 4px;
+  line-height: 1.6;
+}
+.note-box.blue {
+  color: #1A4F7A;
+  background: #EBF5FB;
+  border-left-color: var(--accent);
+}
+
+/* アラートボックス */
+.alert-box {
+  background: #FFF0F0;
+  border: 2px solid var(--req);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.alert-title { color: var(--req); font-weight: bold; margin-bottom: 8px; font-size: 0.9rem; }
+.alert-body  { color: #333; font-size: 0.86rem; line-height: 1.7; }
+.alert-foot  { color: var(--req); font-weight: bold; margin-top: 10px; font-size: 0.84rem; }
+
+.divider { border: none; border-top: 1px solid #E0EBF5; margin: 18px 0; }
+
+/* 免責事項 */
+.disclaimer {
+  background: #FFFBEE;
+  border: 1px solid #E8C84A;
+  border-left: 4px solid #D4AC0D;
+  border-radius: 8px;
+  padding: 14px 18px;
+  font-size: 0.79rem;
+  color: #5C4400;
+  margin-top: 4px;
+  line-height: 1.75;
+}
+.disclaimer-title {
+  font-weight: bold;
+  margin-bottom: 6px;
+  font-size: 0.84rem;
+  color: #7D5800;
+}
+.disclaimer ul {
+  padding-left: 18px;
+  margin-top: 4px;
+}
+.disclaimer li { margin-bottom: 3px; }
+
+/* 法改正バナー */
+.law-banner {
+  background: linear-gradient(135deg, #EAF4FF, #F0F7FF);
+  border: 1px solid #B8D9F5;
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 0.8rem;
+  color: #1A4F7A;
+  margin-top: 16px;
+  line-height: 1.7;
+}
+.law-banner strong { color: var(--navy2); }
+
+@media (max-width: 600px) {
+  header { padding: 18px 16px; }
+  .section-body { padding: 16px; }
+  input[type="number"] { max-width: 100%; }
+  .btn-judge, .btn-reset { max-width: 100%; }
+  .radio-group label { font-size: 0.84rem; padding: 8px 12px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-badge">社労士事務所向けツール</div>
+  <h1>🔍 社会保険・雇用保険 加入判定ツール</h1>
+  <p>新しく入社される方の保険加入要否を確認できます。各項目を入力して「判定する」を押してください。</p>
+</header>
+
+<div class="container">
+
+  <!-- ① 基本情報 -->
+  <div class="section">
+    <div class="section-header">
+      <span class="step-badge">1</span>
+      👤 基本情報
+    </div>
+    <div class="section-body">
+
+      <div class="field">
+        <label class="field-label">週の所定労働時間<span class="field-note">（雇用契約書に記載の時間数）</span></label>
+        <input type="number" id="weekHours" min="0" max="60" step="0.5" placeholder="例：20">
+      </div>
+
+      <div class="field">
+        <label class="field-label">月の所定労働日数<span class="field-note">（雇用契約書・シフト表等をご確認ください）</span></label>
+        <input type="number" id="monthDays" min="0" max="31" step="0.5" placeholder="例：15">
+        <p class="field-hint">※ 3/4基準の判定に使用します。正社員の月所定労働日数が20日の場合、15日以上が3/4以上となります。</p>
+      </div>
+
+      <div class="field">
+        <label class="field-label">雇用期間の見込み</label>
+        <div class="radio-group">
+          <label><input type="radio" name="period" value="over2m" onchange="onPeriodChange()"> 2ヶ月を超える見込み</label>
+          <label><input type="radio" name="period" value="within2m" onchange="onPeriodChange()"> 2ヶ月以内</label>
+          <label><input type="radio" name="period" value="undefined" onchange="onPeriodChange()"> 定めなし</label>
+        </div>
+        <div id="field_renewal" style="display:none;" class="sub-field warn">
+          <div class="sub-label warn">契約更新の可能性<span class="field-note">（令和4年10月改正）</span></div>
+          <p class="sub-note">雇用契約書・就業規則に「更新される旨」の明示がある場合、または同一事業所で更新実績がある場合は、2ヶ月以内でも当初から社会保険加入が必要です。</p>
+          <div class="radio-group">
+            <label><input type="radio" name="renewal" value="yes"> 更新の明示あり／更新実績あり</label>
+            <label><input type="radio" name="renewal" value="no"> どちらもない</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">雇用期間（31日以上雇用される見込み）<span class="field-note">雇用保険の判定用</span></label>
+        <div class="radio-group">
+          <label><input type="radio" name="over31" value="yes"> 31日以上</label>
+          <label><input type="radio" name="over31" value="no"> 31日未満</label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">学生かどうか</label>
+        <div class="radio-group">
+          <label><input type="radio" name="student" value="no" onchange="onStudentChange()"> 学生ではない</label>
+          <label><input type="radio" name="student" value="daytime" onchange="onStudentChange()"> 昼間学生</label>
+          <label><input type="radio" name="student" value="night" onchange="onStudentChange()"> 夜間・通信制学生</label>
+        </div>
+        <!-- 昼間学生の例外チェック -->
+        <div id="field_student_exception" style="display:none;" class="sub-field exception">
+          <div class="sub-label">昼間学生の例外に該当しますか？</div>
+          <p class="sub-note blue">以下のいずれかに該当する場合は、昼間学生であっても社会保険・雇用保険の加入対象となります。</p>
+          <ul style="font-size:0.8rem;color:#1A5276;margin:0 0 10px 18px;line-height:1.8;">
+            <li>卒業見込証明書を有し、卒業後も引き続き同一事業所で勤務予定の方</li>
+            <li>休学中の方</li>
+          </ul>
+          <div class="radio-group">
+            <label><input type="radio" name="studentException" value="yes"> いずれかに該当する</label>
+            <label><input type="radio" name="studentException" value="no"> どちらも該当しない</label>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ② 社会保険の判定条件 -->
+  <div class="section">
+    <div class="section-header">
+      <span class="step-badge">2</span>
+      💰 社会保険の判定条件
+    </div>
+    <div class="section-body">
+
+      <div class="field">
+        <label class="field-label">事業所の規模<span class="field-note">（判定の起点になります）</span></label>
+        <div class="radio-group">
+          <label><input type="radio" name="compSize" value="over51" onchange="onCompSizeChange()"> 51人以上（特定適用事業所）</label>
+          <label><input type="radio" name="compSize" value="under51" onchange="onCompSizeChange()"> 50人以下</label>
+        </div>
+      </div>
+
+      <!-- 51人以上 -->
+      <div id="field_over51" style="display:none;" class="sub-field">
+        <div class="field" style="margin-bottom:0;">
+          <label class="field-label">雇用契約書に定められた所定内賃金（月額）<span class="field-note">（交通費・残業代・賞与・臨時手当は除く）</span></label>
+          <input type="number" id="monthSalary" min="0" step="1000" placeholder="例：80000">
+        </div>
+      </div>
+
+      <!-- 50人以下 -->
+      <div id="field_under51" style="display:none;" class="sub-field">
+        <div class="field" style="margin-bottom:0;">
+          <label class="field-label">正社員の週所定労働時間<span class="field-note">（就業規則・雇用契約書でご確認ください）</span></label>
+          <input type="number" id="fullTimeHours" min="1" max="60" step="0.5" placeholder="例：40">
+          <p class="field-hint" style="margin-top:6px;">週時間数と月日数の両方が正社員の3/4以上の場合に加入必要となります。</p>
+        </div>
+        <div class="field" style="margin-top:14px;margin-bottom:0;">
+          <label class="field-label">正社員の月所定労働日数<span class="field-note">（就業規則・雇用契約書でご確認ください）</span></label>
+          <input type="number" id="fullTimeDays" min="1" max="31" step="0.5" placeholder="例：20">
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ③ 二以上勤務者チェック -->
+  <div class="section">
+    <div class="section-header">
+      <span class="step-badge">3</span>
+      🏢 二以上勤務者チェック
+    </div>
+    <div class="section-body">
+
+      <div class="field">
+        <label class="field-label">他の事業所でも勤務しているか</label>
+        <div class="radio-group">
+          <label><input type="radio" name="multiJob" value="no" onchange="onMultiJobChange()"> 勤務していない</label>
+          <label><input type="radio" name="multiJob" value="yes" onchange="onMultiJobChange()"> 他事業所でも勤務している</label>
+        </div>
+      </div>
+
+      <div id="multiJobDetail" style="display:none;">
+        <div class="field">
+          <label class="field-label">他事業所での社会保険の加入状況</label>
+          <div class="radio-group">
+            <label><input type="radio" name="otherShakai" value="enrolled"> 加入している</label>
+            <label><input type="radio" name="otherShakai" value="not"> 加入していない</label>
+            <label><input type="radio" name="otherShakai" value="unknown"> 不明</label>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label class="field-label">他事業所での雇用保険の加入状況</label>
+          <div class="radio-group">
+            <label><input type="radio" name="otherKoyo" value="enrolled"> 加入している（主たる事業所）</label>
+            <label><input type="radio" name="otherKoyo" value="not"> 加入していない</label>
+            <label><input type="radio" name="otherKoyo" value="unknown"> 不明</label>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="btn-area">
+    <button class="btn-judge" onclick="judge()">▶ 判定する</button><br>
+    <button class="btn-reset" onclick="resetAll()">↺ リセット</button>
+  </div>
+
+  <!-- 結果エリア -->
+  <div id="result" style="display:none; margin-top:8px;">
+    <div class="result-section-header">
+      📋 判定結果
+    </div>
+    <div class="result-inner">
+      <div id="resultShakai"></div>
+      <hr class="divider">
+      <div id="resultKoyo"></div>
+      <hr class="divider">
+      <div id="resultMulti"></div>
+    </div>
+    <div class="disclaimer">
+      <div class="disclaimer-title">⚠️ ご利用にあたっての注意事項</div>
+      このツールは目安の確認用です。実際の加入要否は契約内容・事業所の状況・最新の法令により異なります。特に以下のケースは必ず担当社労士にご確認ください。
+      <ul>
+        <li>二以上勤務者 / 役員 / 日雇い / 季節的業務従事者</li>
+        <li>2ヶ月以内の雇用で更新の可能性がある場合</li>
+        <li>特定適用事業所の判定が微妙な場合</li>
+      </ul>
+    </div>
+    <div class="law-banner">
+      📌 <strong>今後の法改正について：</strong>
+      特定適用事業所の要件は<strong>令和9年10月</strong>から厚生年金被保険者数36人以上の企業に拡大される予定です。
+      また、「所定内賃金月額8.8万円以上」の要件は<strong>令和8年10月に撤廃</strong>される予定です。
+    </div>
+  </div>
+
+</div>
+
+<script>
+function r(name) {
+  var el = document.querySelector('input[name="' + name + '"]:checked');
+  return el ? el.value : null;
+}
+
+function card(type, title, icon, body) {
+  return '<div class="result-card card-' + type + '">'
+    + '<div class="result-header">' + icon + ' ' + title + '</div>'
+    + '<div class="result-body">' + body + '</div></div>';
+}
+
+function pill(text) {
+  return '<span class="basis-pill">📎 ' + text + '</span>';
+}
+
+/* ── イベント ── */
+function onPeriodChange() {
+  var v = r('period');
+  document.getElementById('field_renewal').style.display = (v === 'within2m') ? 'block' : 'none';
+  if (v !== 'within2m') {
+    document.querySelectorAll('input[name="renewal"]').forEach(function(x){ x.checked = false; });
+  }
+}
+
+function onStudentChange() {
+  var v = r('student');
+  document.getElementById('field_student_exception').style.display = (v === 'daytime') ? 'block' : 'none';
+  if (v !== 'daytime') {
+    document.querySelectorAll('input[name="studentException"]').forEach(function(x){ x.checked = false; });
+  }
+}
+
+function onCompSizeChange() {
+  var v = r('compSize');
+  document.getElementById('field_over51').style.display  = (v === 'over51')  ? 'block' : 'none';
+  document.getElementById('field_under51').style.display = (v === 'under51') ? 'block' : 'none';
+  if (v !== 'over51')  document.getElementById('monthSalary').value    = '';
+  if (v !== 'under51') {
+    document.getElementById('fullTimeHours').value = '';
+    document.getElementById('fullTimeDays').value  = '';
+  }
+}
+
+function onMultiJobChange() {
+  document.getElementById('multiJobDetail').style.display = (r('multiJob') === 'yes') ? 'block' : 'none';
+}
+
+/* ── バリデーション ── */
+function validate() {
+  var wh = document.getElementById('weekHours').value;
+  var md = document.getElementById('monthDays').value;
+  var period = r('period');
+  var over31 = r('over31');
+  var student = r('student');
+  var compSize = r('compSize');
+  var multiJob = r('multiJob');
+
+  if (wh === '' || md === '') {
+    alert('基本情報の未入力項目があります（週の所定労働時間・月の所定労働日数）。'); return false;
+  }
+  if (!period || !over31 || !student) {
+    alert('基本情報の未入力項目があります。すべて入力してください。'); return false;
+  }
+  if (student === 'daytime' && !r('studentException')) {
+    alert('昼間学生の場合、例外に該当するかどうかを選択してください。'); return false;
+  }
+  if (period === 'within2m' && !r('renewal')) {
+    alert('雇用期間が2ヶ月以内の場合、契約更新の可能性を選択してください。'); return false;
+  }
+  if (!compSize) {
+    alert('事業所の規模を選択してください。'); return false;
+  }
+  if (compSize === 'over51') {
+    var ms = document.getElementById('monthSalary').value;
+    if (!ms || parseFloat(ms) <= 0) {
+      alert('所定内賃金（月額）を入力してください。'); return false;
+    }
+  }
+  if (compSize === 'under51') {
+    var fh = document.getElementById('fullTimeHours').value;
+    var fd = document.getElementById('fullTimeDays').value;
+    if (!fh || parseFloat(fh) <= 0 || !fd || parseFloat(fd) <= 0) {
+      alert('正社員の週所定労働時間と月所定労働日数を入力してください。'); return false;
+    }
+  }
+  if (!multiJob) {
+    alert('他事業所での勤務状況を選択してください。'); return false;
+  }
+  return true;
+}
+
+/* ── 判定本体 ── */
+function judge() {
+  if (!validate()) return;
+
+  var weekHours      = parseFloat(document.getElementById('weekHours').value);
+  var monthDays      = parseFloat(document.getElementById('monthDays').value);
+  var period         = r('period');
+  var renewal        = r('renewal');
+  var over31         = r('over31');
+  var student        = r('student');
+  var studentExc     = r('studentException'); // 'yes' or 'no' or null
+  var compSize       = r('compSize');
+  var multiJob       = r('multiJob');
+  var otherShakai    = r('otherShakai');
+  var otherKoyo      = r('otherKoyo');
+  var monthSalary    = parseFloat(document.getElementById('monthSalary').value)  || 0;
+  var fullTimeHours  = parseFloat(document.getElementById('fullTimeHours').value) || 0;
+  var fullTimeDays   = parseFloat(document.getElementById('fullTimeDays').value)  || 0;
+
+  // 学生の実効値を決定
+  // 昼間学生かつ例外に該当 → 学生扱いしない（加入対象）
+  var effectiveStudent = student;
+  if (student === 'daytime' && studentExc === 'yes') {
+    effectiveStudent = 'exception'; // 加入対象として扱う
+  }
+
+  /* ════════════════════════
+     社会保険判定
+  ════════════════════════ */
+  var sResult, sType, sReasons = [], sNote = '';
+
+  // 2ヶ月以内かつ更新なし → 加入不要
+  if (period === 'within2m' && renewal === 'no') {
+    sResult = '加入不要（2ヶ月以内・更新なし）';
+    sType   = 'ok';
+    sReasons.push('雇用期間が2ヶ月以内で、契約書等に更新の明示がなく更新実績もないため適用除外となります。');
+    sNote   = '2ヶ月を超えて継続雇用される場合は、その時点から加入が必要になります。';
+
+  } else if (compSize === 'over51') {
+    /* ── 51人以上：4要件 ── */
+    var req1 = weekHours >= 20;
+    var req2 = (effectiveStudent !== 'daytime'); // 昼間学生（例外なし）以外
+    var req3 = monthSalary >= 88000;
+    var req4 = (period === 'over2m' || period === 'undefined' || (period === 'within2m' && renewal === 'yes'));
+
+    if (!req2) {
+      sResult = '加入不要（昼間学生）';
+      sType   = 'ok';
+      sReasons.push('昼間学生は短時間労働者の社会保険加入対象外です。');
+      sNote   = '卒業見込証明書を持ち卒業後も継続雇用予定の方、または休学中の方は例外として加入対象となります。';
+    } else if (effectiveStudent === 'exception') {
+      // 昼間学生の例外 → 以降の4要件で判定
+      req2 = true;
+    }
+
+    if (req2 || effectiveStudent === 'exception') {
+      if (!req1) {
+        sResult = '加入不要';
+        sType   = 'ok';
+        sReasons.push('週' + weekHours + '時間のため、週20時間以上の要件を満たしません。');
+      } else if (req1 && req3 && req4) {
+        sResult = '加入必要（短時間労働者）';
+        sType   = 'req';
+        sReasons.push('週' + weekHours + '時間（✓ 20時間以上）');
+        sReasons.push('所定内賃金 ' + monthSalary.toLocaleString() + '円（✓ 8.8万円以上）');
+        sReasons.push('雇用期間・非学生（✓）');
+        if (effectiveStudent === 'exception') {
+          sNote = '昼間学生ですが例外規定（卒業見込・継続雇用予定または休学中）に該当するため加入対象となります。';
+        }
+      } else if (req1 && req4 && !req3) {
+        sResult = '加入不要（ただし契約変更時は要確認）';
+        sType   = 'warn';
+        sReasons.push('週' + weekHours + '時間（✓ 20時間以上）ですが、所定内賃金 ' + monthSalary.toLocaleString() + '円が8.8万円未満のため加入要件を満たしません。');
+        sNote   = '契約上の所定内賃金が8.8万円未満のため現時点では加入不要です。ただし契約変更により8.8万円以上になった場合はその時点から加入要件を満たします。なお令和8年10月に8.8万円要件は撤廃予定です。';
+      } else {
+        sResult = '加入不要';
+        sType   = 'ok';
+        sReasons.push('短時間労働者の加入要件（4条件すべて）を満たしません。');
+      }
+    }
+
+  } else {
+    /* ── 50人以下：3/4基準（週時間数 AND 月日数） ── */
+    if (effectiveStudent === 'daytime') {
+      sResult = '加入不要（昼間学生）';
+      sType   = 'ok';
+      sReasons.push('昼間学生は社会保険の適用除外となります（事業所規模に関わらず）。');
+      sNote   = '卒業見込証明書を持ち卒業後も継続雇用予定の方、または休学中の方は例外として加入対象となります。';
+    } else {
+      var thresholdH = fullTimeHours * 0.75;
+      var thresholdD = fullTimeDays  * 0.75;
+      var meetHours  = weekHours >= thresholdH;
+      var meetDays   = monthDays >= thresholdD;
+
+      if (meetHours && meetDays) {
+        sResult = '加入必要（3/4基準）';
+        sType   = 'req';
+        sReasons.push('週' + weekHours + '時間（✓ 正社員' + fullTimeHours + '時間の3/4 = ' + thresholdH + '時間以上）');
+        sReasons.push('月' + monthDays + '日（✓ 正社員' + fullTimeDays + '日の3/4 = ' + thresholdD + '日以上）');
+        if (effectiveStudent === 'exception') {
+          sNote = '昼間学生ですが例外規定に該当するため加入対象となります。';
+        }
+      } else {
+        sResult = '加入不要';
+        sType   = 'ok';
+        if (!meetHours) {
+          sReasons.push('週' + weekHours + '時間のため、正社員の週' + fullTimeHours + '時間の3/4（' + thresholdH + '時間）未満です。');
+        }
+        if (!meetDays) {
+          sReasons.push('月' + monthDays + '日のため、正社員の月' + fullTimeDays + '日の3/4（' + thresholdD + '日）未満です。');
+        }
+        sNote = '50人以下の事業所では短時間労働者の適用拡大対象外です。令和9年10月の法改正により変わる可能性があります。';
+      }
+    }
+  }
+
+  /* ════════════════════════
+     雇用保険判定
+  ════════════════════════ */
+  var kResult, kType, kReasons = [], kNote = '';
+
+  if (effectiveStudent === 'daytime') {
+    kResult = '加入不要（昼間学生）';
+    kType   = 'ok';
+    kReasons.push('昼間学生は雇用保険の適用除外となります。');
+    kNote   = '卒業後にそのまま継続雇用される場合は加入が必要になります。';
+  } else if (over31 === 'no') {
+    kResult = '加入不要（雇用期間31日未満）';
+    kType   = 'ok';
+    kReasons.push('雇用期間が31日未満のため、雇用保険の加入要件を満たしません。');
+    kNote   = '31日以上に延長される場合はその時点から加入が必要です。';
+  } else if (weekHours >= 20) {
+    kResult = '加入必要';
+    kType   = 'req';
+    kReasons.push('週' + weekHours + '時間（✓ 20時間以上）かつ雇用期間31日以上のため、加入要件を満たします。');
+    if (student === 'night') {
+      kReasons.push('夜間・通信制学生は適用除外外のため、加入対象です。');
+    }
+    if (effectiveStudent === 'exception') {
+      kNote = '昼間学生ですが例外規定（卒業見込・継続雇用予定または休学中）に該当するため雇用保険も加入対象となります。';
+    }
+  } else {
+    kResult = '加入不要';
+    kType   = 'ok';
+    kReasons.push('週' + weekHours + '時間のため、週20時間以上の要件を満たしません。');
+  }
+
+  /* ════════════════════════
+     二以上勤務者
+  ════════════════════════ */
+  var mHtml = '';
+  if (multiJob === 'yes') {
+    var alertItems = [];
+    if (otherShakai === 'enrolled' || otherShakai === 'unknown') {
+      alertItems.push('🔵 <b>社会保険</b>：'
+        + (otherShakai === 'enrolled'
+          ? '他事業所でも社会保険に加入しています。二以上事業所勤務届の手続きが必要になる場合があります。'
+          : '他事業所の社会保険加入状況が不明です。'));
+    }
+    if (otherKoyo === 'enrolled' || otherKoyo === 'unknown') {
+      alertItems.push('🟡 <b>雇用保険</b>：'
+        + (otherKoyo === 'enrolled'
+          ? '他事業所がすでに主たる事業所として雇用保険に加入しています。今回の事業所では雇用保険に加入できない場合があります。'
+          : '他事業所の雇用保険加入状況が不明です。'));
+    }
+    var body = '<p style="margin-bottom:12px;">他の事業所でも勤務していることが確認されました。</p>';
+    if (alertItems.length > 0) {
+      body += '<div class="alert-box">'
+        + '<div class="alert-title">⚠️ 担当社労士にご連絡ください</div>'
+        + '<div class="alert-body">' + alertItems.join('<br>') + '</div>'
+        + '<div class="alert-foot">手続きに影響があります。必ず担当社労士事務所にお伝えください。</div>'
+        + '</div>';
+    }
+    if (otherShakai === 'not') body += '<p style="margin-bottom:6px;">🔵 <b>社会保険</b>：他事業所での加入なし。通常通り判定します。</p>';
+    if (otherKoyo   === 'not') body += '<p>🟡 <b>雇用保険</b>：他事業所での加入なし。今回の事業所で要件を満たす場合は通常通り加入します。</p>';
+    mHtml = card('dual', '二以上勤務者チェック', '🏢', body);
+  } else {
+    mHtml = '<p style="color:var(--sub);font-size:0.86rem;">他事業所での勤務なし → 二以上勤務者に該当しません。</p>';
+  }
+
+  /* ── 結果描画 ── */
+  var sIcon = {req:'🔴', ok:'🟢', warn:'🟡'}[sType];
+  var kIcon = {req:'🔴', ok:'🟢', warn:'🟡'}[kType];
+
+  var sBody = '<ul class="reason-list">' + sReasons.map(function(x){ return '<li>' + x + '</li>'; }).join('') + '</ul>'
+    + (sNote ? '<div class="note-box">💡 ' + sNote + '</div>' : '');
+  var kBody = '<ul class="reason-list">' + kReasons.map(function(x){ return '<li>' + x + '</li>'; }).join('') + '</ul>'
+    + (kNote ? '<div class="note-box blue">💡 ' + kNote + '</div>' : '');
+
+  document.getElementById('resultShakai').innerHTML = card(sType, '社会保険　' + sResult, sIcon, sBody);
+  document.getElementById('resultKoyo').innerHTML   = card(kType, '雇用保険　' + kResult,  kIcon, kBody);
+  document.getElementById('resultMulti').innerHTML  = mHtml;
+
+  var el = document.getElementById('result');
+  el.style.display = 'block';
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ── リセット ── */
+function resetAll() {
+  document.querySelectorAll('input[type="radio"]').forEach(function(x){ x.checked = false; });
+  ['weekHours','monthDays','monthSalary','fullTimeHours','fullTimeDays'].forEach(function(id){
+    document.getElementById(id).value = '';
+  });
+  ['field_renewal','field_over51','field_under51','multiJobDetail','field_student_exception'].forEach(function(id){
+    document.getElementById(id).style.display = 'none';
+  });
+  document.getElementById('result').style.display = 'none';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
